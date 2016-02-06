@@ -1,0 +1,70 @@
+#!/usr/bin/php
+<?php
+$longopts  = [
+  "pot:",
+  "button:",
+  "port:",
+];
+$options = getopt("", $longopts);
+chdir(dirname( __FILE__));
+
+if (!array_key_exists("port", $options)) {
+  die("Missing required value: --port".PHP_EOL);
+} else {
+  $port = $options['port'];
+}
+
+if (array_key_exists("pot", $options) && is_array($options['pot'])) {
+  $pots = $options['pot'];
+} elseif (array_key_exists("pot", $options) && is_numeric($options['pot'])) {
+  $pots = [$options['pot']];
+} else {
+  $pots = [];
+}
+
+if (array_key_exists("button", $options) && is_array($options['button'])) {
+  $buttons = $options['button'];
+} elseif (array_key_exists("button", $options) && is_numeric($options['button'])) {
+  $buttons = [$options['button']];
+} else {
+  $buttons = [];
+}
+
+echo "Command-line options detected:".PHP_EOL;
+
+echo "Arduino port:       $port".PHP_EOL;
+echo "Analog input pins:  ".implode(",", $pots).PHP_EOL;
+echo "Digital input pins: ".implode(",", $buttons).PHP_EOL;
+
+echo PHP_EOL;
+
+echo "Flushing old configuration...".PHP_EOL;
+$oldconf = [
+  "arduino/config.h",
+  "php/config.inc",
+  // js here
+];
+foreach ($oldconf as $file) {
+  if (file_exists($file)) {
+    echo $file.PHP_EOL;
+    unlink ($file);
+  }
+}
+
+echo "Generating new configuration...".PHP_EOL;
+
+$arduino = file_get_contents("arduino/config.h.tpl");
+$arduino = str_replace(
+  ['STREAMCTL_CONFIGURE_SCRIPT_POTS', 'STREAMCTL_CONFIGURE_SCRIPT_BUTTONS'],
+  [implode(",", $pots),               implode(",", $buttons)],
+  $arduino);
+echo "arduino/config.h".PHP_EOL;
+file_put_contents("arduino/config.h", $arduino);
+
+$php = serialize([
+  'pots' => $pots,
+  'buttons' => $buttons,
+  'port' => $port,
+]);
+echo "php/config.inc".PHP_EOL;
+file_put_contents("php/config.inc", $php);
