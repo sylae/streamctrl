@@ -1,1 +1,4 @@
 /php/nbproject/private/
+
+arduino/config.h
+php/config.inc
